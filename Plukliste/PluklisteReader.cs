@@ -3,5 +3,5 @@
 public interface IPluklisteReader
 {
     bool CanRead(string filePath);
-    Pluklist Read(string filePath);
+    Pluklist? Read(string filePath);
 }

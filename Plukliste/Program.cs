@@ -1,4 +1,7 @@
 ﻿//Eksempel på funktionel kodning hvor der kun bliver brugt et model lag
+
+using Plukliste.Readers;
+
 namespace Plukliste;
 
 class PluklisteProgram { 
@@ -39,13 +42,13 @@ class PluklisteProgram {
                 Console.WriteLine($"\nfile: {files[index]}");
 
                 //read file
-                var factory = new PluklisteReaderFactory();
-                var reader = factory.Get(files[index]);
-                var plukliste = reader.Read(files[index]);
+                PluklisteReaderFactory factory = new PluklisteReaderFactory();
+                IPluklisteReader reader = factory.Get(files[index]);
+                Pluklist? plukliste = reader.Read(files[index]);
 
 
                 //print plukliste
-                if (plukliste != null && plukliste.Lines != null)
+                if (plukliste != null && plukliste.Lines.Count > 0)
                 {
                     Console.WriteLine("\n{0, -13}{1}", "Name:", plukliste.Name);
                     Console.WriteLine("{0, -13}{1}", "Forsendelse:", plukliste.Forsendelse);
@@ -127,12 +130,11 @@ class PluklisteProgram {
                     if (index == files.Count) index--;
                     break;
                 case 'P':
-                    FileStream file = File.OpenRead(files[index]);
-                    System.Xml.Serialization.XmlSerializer xmlSerializer =
-                        new System.Xml.Serialization.XmlSerializer(typeof(Pluklist));
-                    var plukliste = (Pluklist?)xmlSerializer.Deserialize(file);
+                    PluklisteReaderFactory factory = new PluklisteReaderFactory();
+                    IPluklisteReader reader = factory.Get(files[index]);
+                    Pluklist? plukliste = reader.Read(files[index]);
 
-                    if (plukliste != null && plukliste.Lines != null)
+                    if (plukliste != null && plukliste.Lines.Count > 0)
                     {
                         foreach (var item in plukliste.Lines)
                         {
@@ -168,7 +170,6 @@ class PluklisteProgram {
                             }
                         }
                     }
-                    file.Close();
                     break;
             }
             Console.ForegroundColor = standardColor; //reset color
