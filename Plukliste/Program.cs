@@ -41,9 +41,6 @@ class PluklisteProgram {
                 var plukliste = reader.Read(files[index]);
 
 
-
-
-
                 //print plukliste
                 if (plukliste != null && plukliste.Lines != null)
                 {
