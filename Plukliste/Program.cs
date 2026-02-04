@@ -36,10 +36,10 @@ class PluklisteProgram {
                 Console.WriteLine($"\nfile: {files[index]}");
 
                 //read file
-                FileStream file = File.OpenRead(files[index]);
-                System.Xml.Serialization.XmlSerializer xmlSerializer =
-                    new System.Xml.Serialization.XmlSerializer(typeof(Pluklist));
-                var plukliste = (Pluklist?)xmlSerializer.Deserialize(file);
+                var factory = new PluklisteReaderFactory();
+                var reader = factory.Get(files[index]);
+                var plukliste = reader.Read(files[index]);
+
 
                 //print plukliste
                 if (plukliste != null && plukliste.Lines != null)
@@ -54,7 +54,6 @@ class PluklisteProgram {
                         Console.WriteLine("{0,-7}{1,-9}{2,-20}{3}", item.Amount, item.Type, item.ProductID, item.Title);
                     }
                 }
-                file.Close();
             }
 
             //Print options
