@@ -11,6 +11,8 @@ class PluklisteProgram {
         var index = -1;
         var standardColor = Console.ForegroundColor;
         Directory.CreateDirectory("import");
+        Directory.CreateDirectory("print");
+        Directory.CreateDirectory("templates");
 
         if (!Directory.Exists("export"))
         {
@@ -23,6 +25,7 @@ class PluklisteProgram {
         //ACT
         while (readKey != 'Q')
         {
+            bool canPrint = false;
             if (files.Count == 0)
             {
                 Console.WriteLine("No files found.");
@@ -40,7 +43,8 @@ class PluklisteProgram {
                 System.Xml.Serialization.XmlSerializer xmlSerializer =
                     new System.Xml.Serialization.XmlSerializer(typeof(Pluklist));
                 var plukliste = (Pluklist?)xmlSerializer.Deserialize(file);
-
+    
+                
                 //print plukliste
                 if (plukliste != null && plukliste.Lines != null)
                 {
@@ -52,7 +56,9 @@ class PluklisteProgram {
                     foreach (var item in plukliste.Lines)
                     {
                         Console.WriteLine("{0,-7}{1,-9}{2,-20}{3}", item.Amount, item.Type, item.ProductID, item.Title);
+                        if(item.Type == ItemType.Print) canPrint = true;
                     }
+                    
                 }
                 file.Close();
             }
@@ -84,6 +90,13 @@ class PluklisteProgram {
                 Console.ForegroundColor = standardColor;
                 Console.WriteLine("æste plukseddel");
             }
+            if (canPrint)
+            {
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.Write("P");
+                Console.ForegroundColor = standardColor;
+                Console.WriteLine("rint plukseddel");
+            }
             Console.ForegroundColor = ConsoleColor.Green;
             Console.Write("G");
             Console.ForegroundColor = standardColor;
@@ -114,6 +127,50 @@ class PluklisteProgram {
                     Console.WriteLine($"Plukseddel {files[index]} afsluttet.");
                     files.Remove(files[index]);
                     if (index == files.Count) index--;
+                    break;
+                case 'P':
+                    FileStream file = File.OpenRead(files[index]);
+                    System.Xml.Serialization.XmlSerializer xmlSerializer =
+                        new System.Xml.Serialization.XmlSerializer(typeof(Pluklist));
+                    var plukliste = (Pluklist?)xmlSerializer.Deserialize(file);
+
+                    if (plukliste != null && plukliste.Lines != null)
+                    {
+                        foreach (var item in plukliste.Lines)
+                        {
+                            if (item.Type != ItemType.Print) continue;
+
+                            string[] fileEntries = Directory.GetFiles("templates");
+                            string[] fileEntriesNoPath = fileEntries
+                                .Select(f => Path.GetFileNameWithoutExtension(f))
+                                .ToArray();
+                            if(!fileEntriesNoPath.Contains(item.ProductID)) continue;
+
+                            for (int i = 0; i < fileEntriesNoPath.Length; i++)
+                            {
+                                if(fileEntriesNoPath[i] != item.ProductID) continue;
+                                
+                                String html =  File.ReadAllText(fileEntries[i]);
+                                html = html.Replace("[Adresse]", plukliste.Adresse);
+                                html = html.Replace("[Name]", plukliste.Name);
+
+                                string plukList = "";
+                                foreach (Item listItem in plukliste.Lines)
+                                {
+                                    if (listItem.Type == ItemType.Fysisk)
+                                    {
+                                        plukList += $"{listItem.Title} - {listItem.Amount}<br>";
+                                    }
+                                }
+                                html = html.Replace("[Plukliste]", plukList);
+
+                                string path = Path.Combine("print", $"{plukliste.Name}-{plukliste.Adresse}.html");
+                                if(File.Exists(path)) File.Delete(path);
+                                File.WriteAllText(path, html);
+                            }
+                        }
+                    }
+                    file.Close();
                     break;
             }
             Console.ForegroundColor = standardColor; //reset color
