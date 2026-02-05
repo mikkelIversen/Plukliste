@@ -124,7 +124,7 @@ class PluklisteProgram {
                 case 'A':
                     //Move files to import directory
                     var filewithoutPath = files[index].Substring(files[index].LastIndexOf('\\'));
-                    File.Move(files[index], string.Format(@"import\\{0}", filewithoutPath));
+                    File.Move(files[index], string.Format(@"import\{0}", filewithoutPath));
                     Console.WriteLine($"Plukseddel {files[index]} afsluttet.");
                     files.Remove(files[index]);
                     if (index == files.Count) index--;
@@ -133,7 +133,7 @@ class PluklisteProgram {
                     PluklisteReaderFactory factory = new PluklisteReaderFactory();
                     IPluklisteReader reader = factory.Get(files[index]);
                     Pluklist? plukliste = reader.Read(files[index]);
-
+    
                     if (plukliste != null && plukliste.Lines.Count > 0)
                     {
                         foreach (var item in plukliste.Lines)

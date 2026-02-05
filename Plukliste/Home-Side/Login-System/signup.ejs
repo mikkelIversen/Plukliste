@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+</head>
+<style>
+          body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .login-container {
+            background: white;
+            padding: 30px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            width: 300px;
+        }
+        .center {
+            text-align: center;
+        }
+
+         .signup {
+            text-align: center;
+            border: 1px solid #ddd;
+            padding: 7px;
+            border-radius: 5px;
+            margin-top: 2px;
+            display: block;
+            text-decoration: none;
+            color: inherit;
+        }
+        
+        .logo {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+        }
+
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+<body>
+    <div class="login-container">
+        <h2 class="center">Sign Up</h2>
+        <% if (typeof alert !== 'undefined' && alert) { %>
+            <div style="background-color: #f8d7da; color: #721c24; padding: 10px; border-radius: 3px; margin-bottom: 15px; text-align: center;">
+                <%= alert %>
+            </div>
+        <% } %>
+        <form id="signupForm" method="POST" action="/signup">
+            <div class="form-group">
+                <label for="username">Brugernavn:</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Adgangskode:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+
+            <div class="form-group">
+                <label for="confirmPassword">Gentag adgangskode:</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" required>
+            </div>
+            <br>
+            <button type="submit">Sign up</button>
+        </form>
+
+        <p class="center">_________________________________</p>
+        <br>
+
+        <a href="/" class="signup">Har du en konto? Log ind</a>
+    </div>
+
+    <script>
+      const form = document.getElementById('signupForm');
+      form.addEventListener('submit', function(e) {
+        const pwd = document.getElementById('password').value;
+        const cpw = document.getElementById('confirmPassword').value;
+        if (pwd !== cpw) {
+          e.preventDefault();
+          alert('Adgangskode og Gentag adgangskode skal være ens');
+        }
+      });
+    </script>
+</body>
+</html>
