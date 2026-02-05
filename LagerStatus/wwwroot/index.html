@@ -1,0 +1,1478 @@
+﻿<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lager - Avanceret Lagerstyring</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0F172A;
+            --primary-light: #1E293B;
+            --accent: #F97316;
+            --accent-dark: #EA580C;
+            --success: #10B981;
+            --danger: #EF4444;
+            --warning: #F59E0B;
+            --bg: #F8FAFC;
+            --surface: #FFFFFF;
+            --border: #E2E8F0;
+            --text: #0F172A;
+            --text-muted: #64748B;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .app-container {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            min-height: 100vh;
+        }
+
+        /* ========== SIDEBAR ========== */
+        .sidebar {
+            background: var(--primary);
+            color: white;
+            padding: 2rem 1.5rem;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .logo {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 3rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+            .logo::before {
+                content: "■";
+                font-size: 2rem;
+                color: var(--accent);
+            }
+
+        .nav-menu {
+            list-style: none;
+        }
+
+        .nav-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-link {
+            display: block;
+            padding: 0.875rem 1rem;
+            border-radius: 8px;
+            color: rgba(255,255,255,0.7);
+            text-decoration: none;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+            .nav-link:hover {
+                background: var(--primary-light);
+                color: white;
+            }
+
+            .nav-link.active {
+                background: var(--accent);
+                color: white;
+                font-weight: 500;
+            }
+
+        .connection-status {
+            margin-top: 3rem;
+            padding: 1rem;
+            background: var(--primary-light);
+            border-radius: 8px;
+            font-size: 0.875rem;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+            animation: pulse 2s infinite;
+        }
+
+            .status-indicator.connected {
+                background: var(--success);
+            }
+
+            .status-indicator.disconnected {
+                background: var(--danger);
+            }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        /* ========== MAIN CONTENT ========== */
+        .main-content {
+            padding: 2rem;
+            max-width: 1600px;
+        }
+
+        .page {
+            display: none;
+        }
+
+            .page.active {
+                display: block;
+                animation: fadeIn 0.3s;
+            }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .page-header {
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .page-subtitle {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        /* ========== STATS CARDS ========== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--surface);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+            .stat-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* ========== CARDS ========== */
+        .card {
+            background: var(--surface);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        /* ========== FORMS ========== */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+        }
+
+        input, select, textarea {
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.9375rem;
+            transition: all 0.2s;
+            background: var(--surface);
+        }
+
+            input:focus, select:focus, textarea:focus {
+                outline: none;
+                border-color: var(--accent);
+                box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+            }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        /* ========== BUTTONS ========== */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.9375rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+            .btn-primary:hover {
+                background: var(--accent-dark);
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+            }
+
+        .btn-secondary {
+            background: var(--primary);
+            color: white;
+        }
+
+            .btn-secondary:hover {
+                background: var(--primary-light);
+            }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+
+        /* ========== TABLES ========== */
+        .table-container {
+            overflow-x: auto;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--surface);
+        }
+
+        thead {
+            background: var(--bg);
+        }
+
+        th {
+            text-align: left;
+            padding: 1rem;
+            font-weight: 600;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+        }
+
+        td {
+            padding: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        tr:hover {
+            background: var(--bg);
+        }
+
+        /* ========== BADGES ========== */
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-success {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+
+        .badge-warning {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+        }
+
+        .badge-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+        }
+
+        .badge-primary {
+            background: rgba(15, 23, 42, 0.1);
+            color: var(--primary);
+        }
+
+        /* ========== SEARCH & FILTER ========== */
+        .search-bar {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+
+        .search-input {
+            width: 100%;
+            padding-left: 2.5rem;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+        }
+
+        /* ========== PICKLIST BUILDER ========== */
+        .picklist-items {
+            margin-top: 1rem;
+        }
+
+        .picklist-item {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-end;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: var(--bg);
+            border-radius: 8px;
+        }
+
+            .picklist-item .form-group {
+                flex: 1;
+            }
+
+        .remove-item-btn {
+            padding: 0.75rem;
+            background: var(--danger);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+            .remove-item-btn:hover {
+                background: #DC2626;
+            }
+
+        /* ========== MODAL ========== */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+            .modal.active {
+                display: flex;
+            }
+
+        .modal-content {
+            background: var(--surface);
+            border-radius: 16px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: modalIn 0.3s;
+        }
+
+        @keyframes modalIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .modal-header {
+            padding: 2rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-muted);
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+        }
+
+            .modal-close:hover {
+                background: var(--bg);
+            }
+
+        .modal-body {
+            padding: 2rem;
+        }
+
+        /* ========== ALERTS ========== */
+        .alert {
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .alert-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .alert-warning {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        /* ========== UTILITIES ========== */
+        .text-muted {
+            color: var(--text-muted);
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .mt-1 {
+            margin-top: 1rem;
+        }
+
+        .mb-1 {
+            margin-bottom: 1rem;
+        }
+
+        .mb-2 {
+            margin-bottom: 2rem;
+        }
+
+        .flex {
+            display: flex;
+        }
+
+        .gap-1 {
+            gap: 1rem;
+        }
+
+        .justify-between {
+            justify-content: space-between;
+        }
+
+        .items-center {
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="logo">Lager</div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a class="nav-link active" data-page="dashboard">Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-page="products">Produkter</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-page="inventory">Lagerstatus</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-page="picklists">Pluklister</a>
+                </li>
+            </ul>
+            <div class="connection-status">
+                <span class="status-indicator connected"></span>
+                <span id="statusText">Forbundet</span>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="main-content">
+            <!-- DASHBOARD PAGE -->
+            <div class="page active" id="dashboard">
+                <div class="page-header">
+                    <h1 class="page-title">Dashboard</h1>
+                    <p class="page-subtitle">Oversigt over lagerstatus</p>
+                </div>
+
+                <div class="stats-grid" id="statsGrid">
+                    <!-- Filled by JS -->
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Lav lagerbeholdning</h2>
+                    </div>
+                    <div class="table-container">
+                        <table id="lowStockTable">
+                            <thead>
+                                <tr>
+                                    <th>Produkt ID</th>
+                                    <th>Navn</th>
+                                    <th>Nuværende</th>
+                                    <th>Min. beholdning</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PRODUCTS PAGE -->
+            <div class="page" id="products">
+                <div class="page-header">
+                    <h1 class="page-title">Produkter</h1>
+                    <p class="page-subtitle">Administrer dit produktkatalog</p>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Opret nyt produkt</h2>
+                    </div>
+                    <form id="productForm">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Produkt ID *</label>
+                                <input type="text" id="productId" required placeholder="f.eks. SKU001">
+                            </div>
+                            <div class="form-group">
+                                <label>Navn *</label>
+                                <input type="text" id="productName" required placeholder="Produktnavn">
+                            </div>
+                            <div class="form-group">
+                                <label>Kategori</label>
+                                <input type="text" id="productCategory" list="categoryList" placeholder="Vælg eller opret kategori">
+                                <datalist id="categoryList"></datalist>
+                            </div>
+                            <div class="form-group">
+                                <label>Lokation</label>
+                                <input type="text" id="productLocation" placeholder="f.eks. Hylde A1">
+                            </div>
+                            <div class="form-group">
+                                <label>Stregkode</label>
+                                <input type="text" id="productBarcode" placeholder="Stregkode">
+                            </div>
+                            <div class="form-group">
+                                <label>Start antal</label>
+                                <input type="number" id="productInitialQty" min="0" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label>Min. beholdning</label>
+                                <input type="number" id="productMinStock" min="0" value="0">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Beskrivelse</label>
+                            <textarea id="productDescription" placeholder="Produktbeskrivelse (valgfrit)"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            Opret produkt
+                        </button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Produktkatalog</h2>
+                    </div>
+                    <div class="search-bar">
+                        <span class="search-icon">Search:</span>
+                        <input type="text" class="search-input" id="productSearch" placeholder="Søg efter produkt...">
+                    </div>
+                    <div class="filter-group">
+                        <select id="categoryFilter">
+                            <option value="">Alle kategorier</option>
+                        </select>
+                    </div>
+                    <div class="table-container">
+                        <table id="productsTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Navn</th>
+                                    <th>Kategori</th>
+                                    <th>Lokation</th>
+                                    <th>Min. beholdning</th>
+                                    <th>Handlinger</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- INVENTORY PAGE -->
+            <div class="page" id="inventory">
+                <div class="page-header">
+                    <h1 class="page-title">Lagerstatus</h1>
+                    <p class="page-subtitle">Overvåg og juster lagerbeholdning</p>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Lagerbeholdning</h2>
+                    </div>
+                    <div class="search-bar">
+                        <span class="search-icon">Search:</span>
+                        <input type="text" class="search-input" id="inventorySearch" placeholder="Søg i lager...">
+                    </div>
+                    <div class="table-container">
+                        <table id="inventoryTable">
+                            <thead>
+                                <tr>
+                                    <th>Produkt ID</th>
+                                    <th>Navn</th>
+                                    <th>På lager</th>
+                                    <th>Reserveret</th>
+                                    <th>Tilgængeligt</th>
+                                    <th>Status</th>
+                                    <th>Handlinger</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PICKLISTS PAGE -->
+            <div class="page" id="picklists">
+                <div class="page-header">
+                    <h1 class="page-title">Pluklister</h1>
+                    <p class="page-subtitle">Opret og administrer pluklister</p>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Opret ny plukliste</h2>
+                    </div>
+                    <form id="picklistForm">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Plukliste ID *</label>
+                                <input type="text" id="picklistId" required placeholder="f.eks. PL-001">
+                            </div>
+                            <div class="form-group">
+                                <label>Navn *</label>
+                                <input type="text" id="picklistName" required placeholder="Plukliste navn">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Noter</label>
+                            <textarea id="picklistNotes" placeholder="Noter til pluklisten (valgfrit)"></textarea>
+                        </div>
+
+                        <div class="picklist-items" id="picklistItems">
+                            <label>Varer på pluklisten</label>
+                            <!-- Items added by JS -->
+                        </div>
+
+                        <button type="button" class="btn btn-secondary mb-1" onclick="addPicklistItem()">
+                            Tilføj vare
+                        </button>
+                        <br>
+                        <button type="submit" class="btn btn-success">
+                            Opret plukliste
+                        </button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Alle pluklister</h2>
+                        <div class="flex gap-1">
+                            <button class="btn btn-small btn-secondary" onclick="importPicklist()">
+                                Importer JSON
+                            </button>
+                        </div>
+                    </div>
+                    <div class="filter-group">
+                        <select id="picklistStatusFilter">
+                            <option value="">Alle statuser</option>
+                            <option value="active">Aktive</option>
+                            <option value="completed">Afsluttede</option>
+                            <option value="cancelled">Annullerede</option>
+                        </select>
+                    </div>
+                    <div class="table-container">
+                        <table id="picklistsTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Navn</th>
+                                    <th>Varer</th>
+                                    <th>Status</th>
+                                    <th>Oprettet</th>
+                                    <th>Handlinger</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- MODALS -->
+    <div class="modal" id="adjustInventoryModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Juster lagerbeholdning</h2>
+                <button class="modal-close" onclick="closeModal('adjustInventoryModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Produkt</label>
+                    <input type="text" id="adjustProductId" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Ændring i antal (+ eller -)</label>
+                    <input type="number" id="adjustQuantity" placeholder="f.eks. +10 eller -5">
+                </div>
+                <button class="btn btn-primary" onclick="submitInventoryAdjustment()">
+                    Gem ændring
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="picklistDetailsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Plukliste detaljer</h2>
+                <button class="modal-close" onclick="closeModal('picklistDetailsModal')">×</button>
+            </div>
+            <div class="modal-body" id="picklistDetailsContent">
+                <!-- Filled by JS -->
+            </div>
+        </div>
+    </div>
+
+    <input type="file" id="jsonFileInput" accept=".json" style="display: none;">
+
+    <script>
+        const API = "";
+        let allProducts = [];
+        let allInventory = [];
+        let allPicklists = [];
+        let allCategories = [];
+
+        // ============= NAVIGATION =============
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const page = link.dataset.page;
+
+                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+
+                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+                document.getElementById(page).classList.add('active');
+
+                loadPageData(page);
+            });
+        });
+
+        // ============= DATA LOADING =============
+        async function loadAllData() {
+            try {
+                const [productsRes, inventoryRes, picklistsRes, categoriesRes, statsRes] = await Promise.all([
+                    fetch(`${API}/products`),
+                    fetch(`${API}/inventory`),
+                    fetch(`${API}/picklists`),
+                    fetch(`${API}/categories`),
+                    fetch(`${API}/stats`)
+                ]);
+
+                allProducts = await productsRes.json();
+                allInventory = await inventoryRes.json();
+                allPicklists = await picklistsRes.json();
+                allCategories = await categoriesRes.json();
+                const stats = await statsRes.json();
+
+                updateConnectionStatus(true);
+                renderStats(stats);
+                updateCategoryLists();
+
+                const activePage = document.querySelector('.page.active').id;
+                loadPageData(activePage);
+            } catch (error) {
+                console.error('Fejl ved indlæsning:', error);
+                updateConnectionStatus(false);
+            }
+        }
+
+        function loadPageData(page) {
+            switch (page) {
+                case 'dashboard':
+                    loadDashboard();
+                    break;
+                case 'products':
+                    renderProductsTable();
+                    break;
+                case 'inventory':
+                    renderInventoryTable();
+                    break;
+                case 'picklists':
+                    renderPicklistsTable();
+                    break;
+            }
+        }
+
+        function updateConnectionStatus(connected) {
+            const indicator = document.querySelector('.status-indicator');
+            const statusText = document.getElementById('statusText');
+
+            if (connected) {
+                indicator.className = 'status-indicator connected';
+                statusText.textContent = 'Forbundet';
+            } else {
+                indicator.className = 'status-indicator disconnected';
+                statusText.textContent = 'Afbrudt';
+            }
+        }
+
+        // ============= DASHBOARD =============
+        function renderStats(stats) {
+            const statsGrid = document.getElementById('statsGrid');
+            statsGrid.innerHTML = `
+                    <div class="stat-card">
+                        <div class="stat-label">Produkter</div>
+                        <div class="stat-value">${stats.totalProducts}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Total beholdning</div>
+                        <div class="stat-value">${stats.totalStock}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Reserveret</div>
+                        <div class="stat-value">${stats.totalReserved}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Aktive pluklister</div>
+                        <div class="stat-value">${stats.activePicklists}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Afsluttede pluklister</div>
+                        <div class="stat-value">${stats.completedPicklists}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Lav lagerbeholdning</div>
+                        <div class="stat-value" style="color: var(--warning)">${stats.lowStockItems}</div>
+                    </div>
+                `;
+        }
+
+        async function loadDashboard() {
+            try {
+                const res = await fetch(`${API}/inventory/low-stock`);
+                const lowStock = await res.json();
+
+                const tbody = document.querySelector('#lowStockTable tbody');
+
+                if (lowStock.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Ingen produkter med lav beholdning</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = lowStock.map(item => `
+                        <tr>
+                            <td>${item.productId}</td>
+                            <td>${item.name}</td>
+                            <td><span class="badge badge-warning">${item.current}</span></td>
+                            <td>${item.minStock}</td>
+                        </tr>
+                    `).join('');
+            } catch (error) {
+                console.error('Fejl ved indlæsning af dashboard:', error);
+            }
+        }
+
+        // ============= PRODUCTS =============
+        document.getElementById('productForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const data = {
+                id: document.getElementById('productId').value,
+                name: document.getElementById('productName').value,
+                category: document.getElementById('productCategory').value,
+                location: document.getElementById('productLocation').value,
+                barcode: document.getElementById('productBarcode').value,
+                description: document.getElementById('productDescription').value,
+                minStock: parseInt(document.getElementById('productMinStock').value) || 0,
+                initialQty: parseInt(document.getElementById('productInitialQty').value) || 0
+            };
+
+            try {
+                const res = await fetch(`${API}/products`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (!res.ok) {
+                    const error = await res.text();
+                    alert('Fejl: ' + error);
+                    return;
+                }
+
+                e.target.reset();
+                await loadAllData();
+                alert('Produkt oprettet!');
+            } catch (error) {
+                alert('Fejl ved oprettelse: ' + error.message);
+            }
+        });
+
+        function renderProductsTable() {
+            const search = document.getElementById('productSearch').value.toLowerCase();
+            const categoryFilter = document.getElementById('categoryFilter').value;
+
+            let filtered = allProducts.filter(p => {
+                const matchesSearch = !search ||
+                    p.id.toLowerCase().includes(search) ||
+                    p.name.toLowerCase().includes(search);
+                const matchesCategory = !categoryFilter || p.category === categoryFilter;
+                return matchesSearch && matchesCategory;
+            });
+
+            const tbody = document.querySelector('#productsTable tbody');
+            tbody.innerHTML = filtered.map(p => `
+                    <tr>
+                        <td><strong>${p.id}</strong></td>
+                        <td>${p.name}</td>
+                        <td><span class="badge badge-primary">${p.category || '-'}</span></td>
+                        <td>${p.location || '-'}</td>
+                        <td>${p.minStock}</td>
+                        <td>
+                            <button class="btn btn-small btn-danger" onclick="deleteProduct('${p.id}')">
+                                Slet
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+        }
+
+        async function deleteProduct(id) {
+            if (!confirm(`Er du sikker på at du vil slette produkt ${id}?`)) return;
+
+            try {
+                const res = await fetch(`${API}/products/${id}`, { method: 'DELETE' });
+                if (!res.ok) {
+                    const error = await res.text();
+                    alert('Fejl: ' + error);
+                    return;
+                }
+                await loadAllData();
+                alert('Produkt slettet!');
+            } catch (error) {
+                alert('Fejl: ' + error.message);
+            }
+        }
+
+        document.getElementById('productSearch').addEventListener('input', renderProductsTable);
+        document.getElementById('categoryFilter').addEventListener('change', renderProductsTable);
+
+        // ============= INVENTORY =============
+        function renderInventoryTable() {
+            const search = document.getElementById('inventorySearch').value.toLowerCase();
+
+            let filtered = allInventory.map(inv => {
+                const product = allProducts.find(p => p.id === inv.productId) || {};
+                return { ...inv, ...product };
+            }).filter(item => {
+                return !search ||
+                    item.productId.toLowerCase().includes(search) ||
+                    (item.name && item.name.toLowerCase().includes(search));
+            });
+
+            const tbody = document.querySelector('#inventoryTable tbody');
+            tbody.innerHTML = filtered.map(item => {
+                const available = item.quantity - item.reserved;
+                const isLow = available <= (item.minStock || 0);
+
+                return `
+                        <tr>
+                            <td><strong>${item.productId}</strong></td>
+                            <td>${item.name || '-'}</td>
+                            <td>${item.quantity}</td>
+                            <td>${item.reserved}</td>
+                            <td><strong>${available}</strong></td>
+                            <td>
+                                ${isLow ? '<span class="badge badge-warning">Lav</span>' : '<span class="badge badge-success">OK</span>'}
+                            </td>
+                            <td>
+                                <button class="btn btn-small btn-secondary" onclick="openAdjustInventory('${item.productId}')">
+                                     Juster
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+            }).join('');
+        }
+
+        function openAdjustInventory(productId) {
+            document.getElementById('adjustProductId').value = productId;
+            document.getElementById('adjustQuantity').value = '';
+            openModal('adjustInventoryModal');
+        }
+
+        async function submitInventoryAdjustment() {
+            const productId = document.getElementById('adjustProductId').value;
+            const quantity = parseInt(document.getElementById('adjustQuantity').value);
+
+            if (!quantity || quantity === 0) {
+                alert('Indtast en gyldig ændring');
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API}/inventory/${productId}/adjust`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ quantity })
+                });
+
+                if (!res.ok) {
+                    alert('Fejl ved justering');
+                    return;
+                }
+
+                closeModal('adjustInventoryModal');
+                await loadAllData();
+                alert('Lagerbeholdning opdateret!');
+            } catch (error) {
+                alert('Fejl: ' + error.message);
+            }
+        }
+
+        document.getElementById('inventorySearch').addEventListener('input', renderInventoryTable);
+
+        // ============= PICKLISTS =============
+        let picklistItemCount = 0;
+
+        function addPicklistItem() {
+            const container = document.getElementById('picklistItems');
+            const itemId = ++picklistItemCount;
+
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'picklist-item';
+            itemDiv.id = `item-${itemId}`;
+            itemDiv.innerHTML = `
+                    <div class="form-group" style="flex: 2;">
+                        <label>Produkt</label>
+                        <select class="item-product" required>
+                            <option value="">Vælg produkt...</option>
+                            ${allProducts.map(p => {
+                const inv = allInventory.find(i => i.productId === p.id);
+                const available = inv ? (inv.quantity - inv.reserved) : 0;
+                return `<option value="${p.id}">${p.id} - ${p.name} (Ledig: ${available})</option>`;
+            }).join('')}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Antal</label>
+                        <input type="number" class="item-quantity" min="1" required>
+                    </div>
+                    <button type="button" class="remove-item-btn" onclick="removePicklistItem(${itemId})">
+                        
+                    </button>
+                `;
+
+            container.appendChild(itemDiv);
+        }
+
+        function removePicklistItem(itemId) {
+            document.getElementById(`item-${itemId}`).remove();
+        }
+
+        document.getElementById('picklistForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const items = Array.from(document.querySelectorAll('.picklist-item')).map(div => ({
+                productId: div.querySelector('.item-product').value,
+                qty: parseInt(div.querySelector('.item-quantity').value)
+            }));
+
+            if (items.length === 0) {
+                alert('Tilføj mindst én vare til pluklisten');
+                return;
+            }
+
+            const data = {
+                id: document.getElementById('picklistId').value,
+                name: document.getElementById('picklistName').value,
+                notes: document.getElementById('picklistNotes').value,
+                status: 'active',
+                items: items
+            };
+
+            try {
+                const res = await fetch(`${API}/picklists`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (!res.ok) {
+                    const error = await res.text();
+                    alert('Fejl: ' + error);
+                    return;
+                }
+
+                e.target.reset();
+                document.getElementById('picklistItems').innerHTML = '';
+                picklistItemCount = 0;
+                await loadAllData();
+                alert('Plukliste oprettet!');
+            } catch (error) {
+                alert('Fejl: ' + error.message);
+            }
+        });
+
+        function renderPicklistsTable() {
+            const statusFilter = document.getElementById('picklistStatusFilter').value;
+
+            let filtered = allPicklists.filter(pl => {
+                return !statusFilter || pl.status === statusFilter;
+            });
+
+            const tbody = document.querySelector('#picklistsTable tbody');
+            tbody.innerHTML = filtered.map(pl => {
+                let statusBadge = '';
+                switch (pl.status) {
+                    case 'active':
+                        statusBadge = '<span class="badge badge-warning">Aktiv</span>';
+                        break;
+                    case 'completed':
+                        statusBadge = '<span class="badge badge-success">Afsluttet</span>';
+                        break;
+                    case 'cancelled':
+                        statusBadge = '<span class="badge badge-danger">Annulleret</span>';
+                        break;
+                }
+
+                const createdDate = new Date(pl.createdAt).toLocaleDateString('da-DK');
+
+                return `
+                        <tr>
+                            <td><strong>${pl.id}</strong></td>
+                            <td>${pl.name}</td>
+                            <td>${pl.items.length} varer</td>
+                            <td>${statusBadge}</td>
+                            <td>${createdDate}</td>
+                            <td>
+                                <button class="btn btn-small btn-secondary" onclick="viewPicklistDetails('${pl.id}')">
+                                    Se detaljer
+                                </button>
+                                ${pl.status === 'active' ? `
+                                    <button class="btn btn-small btn-success" onclick="completePicklist('${pl.id}')">
+                                        Afslut
+                                    </button>
+                                    <button class="btn btn-small btn-danger" onclick="cancelPicklist('${pl.id}')">
+                                        Annuller
+                                    </button>
+                                ` : ''}
+                                <button class="btn btn-small btn-primary" onclick="exportPicklist('${pl.id}')">
+                                    Export JSON
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+            }).join('');
+        }
+
+        async function viewPicklistDetails(id) {
+            const picklist = allPicklists.find(pl => pl.id === id);
+            if (!picklist) return;
+
+            const content = document.getElementById('picklistDetailsContent');
+            content.innerHTML = `
+                    <div class="mb-1">
+                        <strong>ID:</strong> ${picklist.id}<br>
+                        <strong>Navn:</strong> ${picklist.name}<br>
+                        <strong>Status:</strong> ${picklist.status}<br>
+                        <strong>Oprettet:</strong> ${new Date(picklist.createdAt).toLocaleString('da-DK')}<br>
+                        ${picklist.completedAt ? `<strong>Afsluttet:</strong> ${new Date(picklist.completedAt).toLocaleString('da-DK')}<br>` : ''}
+                        ${picklist.notes ? `<strong>Noter:</strong> ${picklist.notes}<br>` : ''}
+                    </div>
+                    <h3 class="mb-1">Varer på pluklisten</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Produkt ID</th>
+                                <th>Navn</th>
+                                <th>Antal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${picklist.items.map(item => {
+                const product = allProducts.find(p => p.id === item.productId) || {};
+                return `
+                                    <tr>
+                                        <td>${item.productId}</td>
+                                        <td>${product.name || '-'}</td>
+                                        <td><strong>${item.qty}</strong></td>
+                                    </tr>
+                                `;
+            }).join('')}
+                        </tbody>
+                    </table>
+                `;
+
+            openModal('picklistDetailsModal');
+        }
+
+        async function completePicklist(id) {
+            if (!confirm('Er du sikker på at pluklisten er færdig?')) return;
+
+            try {
+                const res = await fetch(`${API}/picklists/${id}/complete`, { method: 'POST' });
+                if (!res.ok) {
+                    alert('Fejl ved afslutning');
+                    return;
+                }
+                await loadAllData();
+                alert('Plukliste afsluttet!');
+            } catch (error) {
+                alert('Fejl: ' + error.message);
+            }
+        }
+
+        async function cancelPicklist(id) {
+            if (!confirm('Er du sikker på at du vil annullere pluklisten?')) return;
+
+            try {
+                const res = await fetch(`${API}/picklists/${id}/cancel`, { method: 'POST' });
+                if (!res.ok) {
+                    alert('Fejl ved annullering');
+                    return;
+                }
+                await loadAllData();
+                alert('Plukliste annulleret!');
+            } catch (error) {
+                alert('Fejl: ' + error.message);
+            }
+        }
+
+        function exportPicklist(id) {
+            const picklist = allPicklists.find(pl => pl.id === id);
+            if (!picklist) return;
+
+            const dataStr = JSON.stringify(picklist, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `plukliste_${picklist.id}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importPicklist() {
+            const input = document.getElementById('jsonFileInput');
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                try {
+                    const text = await file.text();
+                    const picklist = JSON.parse(text);
+
+                    // Valider struktur
+                    if (!picklist.id || !picklist.items || !Array.isArray(picklist.items)) {
+                        alert('Ugyldig JSON format');
+                        return;
+                    }
+
+                    const res = await fetch(`${API}/picklists`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(picklist)
+                    });
+
+                    if (!res.ok) {
+                        const error = await res.text();
+                        alert('Fejl ved import: ' + error);
+                        return;
+                    }
+
+                    await loadAllData();
+                    alert('Plukliste importeret!');
+                } catch (error) {
+                    alert('Fejl ved import: ' + error.message);
+                }
+
+                input.value = '';
+            };
+            input.click();
+        }
+
+        document.getElementById('picklistStatusFilter').addEventListener('change', renderPicklistsTable);
+
+        // ============= UTILITIES =============
+        function updateCategoryLists() {
+            const categoryList = document.getElementById('categoryList');
+            categoryList.innerHTML = allCategories.map(c => `<option value="${c}">`).join('');
+
+            const categoryFilter = document.getElementById('categoryFilter');
+            categoryFilter.innerHTML = '<option value="">Alle kategorier</option>' +
+                allCategories.map(c => `<option value="${c}">${c}</option>`).join('');
+        }
+
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        // Click outside modal to close
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.remove('active');
+                }
+            });
+        });
+
+        // ============= INIT =============
+        loadAllData();
+        setInterval(loadAllData, 10000); // Refresh every 10 seconds
+
+        // Add first picklist item by default
+        addPicklistItem();
+    </script>
+</body>
+</html>

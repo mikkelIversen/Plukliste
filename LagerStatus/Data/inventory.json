@@ -1,0 +1,27 @@
+[
+  {
+    "ProductId": "SKU-4955",
+    "Quantity": 10,
+    "Reserved": 0
+  },
+  {
+    "ProductId": "SKU-4467",
+    "Quantity": 10,
+    "Reserved": 0
+  },
+  {
+    "ProductId": "SKU-3912",
+    "Quantity": 10,
+    "Reserved": 0
+  },
+  {
+    "ProductId": "SKU-1398",
+    "Quantity": 10,
+    "Reserved": 0
+  },
+  {
+    "ProductId": "SKU-1645",
+    "Quantity": 10,
+    "Reserved": 0
+  }
+]
