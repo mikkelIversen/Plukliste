@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= title %></title>
-</head>
-<style>
+</head>     <!-- Css til login (design af login siden)-->
+<style>     
           body {
             font-family: Arial, sans-serif;
             background-color: #f5f5f5;
@@ -79,6 +79,7 @@
         }
     </style>
 <body>
+    <!-- input container for login -->
     <div class="login-container">
         <h2 class="center">Login</h2>
         <form id="loginForm" method="POST" action="/login">
@@ -102,7 +103,7 @@
             <a href="/signup" class="signup">Sign up</a>
 
         </form>
-
+        <!-- Script til at vise alerter -->
         <% if (typeof alert !== 'undefined') { %>
             <script>
                 alert("<%= alert %>");

@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= title %></title>
-</head>
-<style>
+</head>     <!-- Css til signup (design af signup siden)-->
+<style>     
           body {
             font-family: Arial, sans-serif;
             background-color: #f5f5f5;
@@ -78,7 +78,7 @@
             background-color: #0056b3;
         }
     </style>
-<body>
+<body>  <!-- input container for signup -->
     <div class="login-container">
         <h2 class="center">Sign Up</h2>
         <form id="signupForm" method="POST" action="/signup">
@@ -86,7 +86,7 @@
                 <label for="username">Brugernavn:</label>
                 <input type="text" id="username" name="username" required>
             </div>
-            
+            <!-- required repeated of password to confirm -->
             <div class="form-group">
                 <label for="password">Adgangskode:</label>
                 <input type="password" id="password" name="password" required>
@@ -101,18 +101,18 @@
 
             <p class="center">_________________________________</p>
             <br>
-
+            <!-- return to login link -->
             <a href="/" class="signup">Har du en konto? Log ind</a>
         </form>
-
+        <!-- Script to show alerts -->
         <% if (typeof alert !== 'undefined') { %>
             <script>
                 alert("<%= alert %>");
             </script>
         <% } %>
     </div>
-
-    <script>
+    <!-- script to validate that passwords match -->
+    <script> 
       const form = document.getElementById('signupForm');
       form.addEventListener('submit', function(e) {
         const pwd = document.getElementById('password').value;
