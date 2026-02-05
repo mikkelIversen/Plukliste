@@ -1,18 +1,19 @@
 ﻿//Eksempel på funktionel kodning hvor der kun bliver brugt et model lag
 
+using System.Drawing;
 using Plukliste.Readers;
 
 namespace Plukliste;
 
-class PluklisteProgram { 
+class Program { 
 
     static void Main()
     {
         //Arrange
         char readKey = ' ';
         List<string> files;
-        var index = -1;
-        var standardColor = Console.ForegroundColor;
+        int index = -1;
+        ConsoleColor standardColor = Console.ForegroundColor;
         Directory.CreateDirectory("import");
         Directory.CreateDirectory("print");
         Directory.CreateDirectory("templates");
@@ -29,13 +30,8 @@ class PluklisteProgram {
         while (readKey != 'Q')
         {
             bool canPrint = false;
-            if (files.Count == 0)
-            {
-                Console.WriteLine("No files found.");
-
-            }
-            else
-            {
+            if (files.Count == 0) Console.WriteLine("No files found.");
+            else {
                 if (index == -1) index = 0;
 
                 Console.WriteLine($"Plukliste {index + 1} af {files.Count}");
@@ -63,45 +59,22 @@ class PluklisteProgram {
                     
                 }
             }
-
+            
+            void printConsoleOption(string name)
+            {
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.Write(name[0]);
+                Console.ForegroundColor = standardColor;
+                Console.WriteLine(name.Substring(1, name.Length - 1));
+            }
             //Print options
             Console.WriteLine("\n\nOptions:");
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.Write("Q");
-            Console.ForegroundColor = standardColor;
-            Console.WriteLine("uit");
-            if (index >= 0)
-            {
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.Write("A");
-                Console.ForegroundColor = standardColor;
-                Console.WriteLine("fslut plukseddel");
-            }
-            if (index > 0)
-            {
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.Write("F");
-                Console.ForegroundColor = standardColor;
-                Console.WriteLine("orrige plukseddel");
-            }
-            if (index < files.Count - 1)
-            {
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.Write("N");
-                Console.ForegroundColor = standardColor;
-                Console.WriteLine("æste plukseddel");
-            }
-            if (canPrint)
-            {
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.Write("P");
-                Console.ForegroundColor = standardColor;
-                Console.WriteLine("rint plukseddel");
-            }
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.Write("G");
-            Console.ForegroundColor = standardColor;
-            Console.WriteLine("enindlæs pluksedler");
+            printConsoleOption("Quit");
+            if (index >= 0) printConsoleOption("Afslut plukseddel");
+            if (index > 0) printConsoleOption("Forrige plukseddel");
+            if (index < files.Count - 1) printConsoleOption("Næste plukseddel");
+            if (canPrint) printConsoleOption("Print plukseddel");
+            printConsoleOption("Genindlæs pluksedler");
 
             readKey = Console.ReadKey().KeyChar;
             if (readKey >= 'a') readKey -= (char)('a' - 'A'); //HACK: To upper
@@ -123,7 +96,7 @@ class PluklisteProgram {
                     break;
                 case 'A':
                     //Move files to import directory
-                    var filewithoutPath = files[index].Substring(files[index].LastIndexOf('\\'));
+                    string filewithoutPath = files[index].Substring(files[index].LastIndexOf('\\'));
                     File.Move(files[index], string.Format(@"import\\{0}", filewithoutPath));
                     Console.WriteLine($"Plukseddel {files[index]} afsluttet.");
                     files.Remove(files[index]);
