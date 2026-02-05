@@ -81,11 +81,6 @@
 <body>
     <div class="login-container">
         <h2 class="center">Sign Up</h2>
-        <% if (typeof alert !== 'undefined' && alert) { %>
-            <div style="background-color: #f8d7da; color: #721c24; padding: 10px; border-radius: 3px; margin-bottom: 15px; text-align: center;">
-                <%= alert %>
-            </div>
-        <% } %>
         <form id="signupForm" method="POST" action="/signup">
             <div class="form-group">
                 <label for="username">Brugernavn:</label>
@@ -103,12 +98,20 @@
             </div>
             <br>
             <button type="submit">Sign up</button>
+
+            <p class="center">_________________________________</p>
+            <br>
+
+            <a href="/" class="signup">Har du en konto? Log ind</a>
+            </div>
+        </a>
         </form>
 
-        <p class="center">_________________________________</p>
-        <br>
-
-        <a href="/" class="signup">Har du en konto? Log ind</a>
+        <% if (typeof alert !== 'undefined') { %>
+            <script>
+                alert("<%= alert %>");
+            </script>
+        <% } %>
     </div>
 
     <script>
