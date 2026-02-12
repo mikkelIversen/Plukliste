@@ -1,12 +1,20 @@
 [
   {
     "Id": "PL-6527",
+    "Name": "",
     "Status": "completed",
-    "Items": []
+    "Items": [],
+    "CreatedAt": "0001-01-01T00:00:00",
+    "CompletedAt": null,
+    "Notes": ""
   },
   {
     "Id": "PL-1644",
-    "Status": "active",
-    "Items": []
+    "Name": "",
+    "Status": "completed",
+    "Items": [],
+    "CreatedAt": "0001-01-01T00:00:00",
+    "CompletedAt": "2026-02-13T00:03:48.6464366+01:00",
+    "Notes": ""
   }
 ]
