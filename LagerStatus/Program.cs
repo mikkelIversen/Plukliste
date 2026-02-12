@@ -3,6 +3,9 @@ using System.Text.Json;
 using System.Security.Cryptography;
 using System.Text;
 
+// main should primarily be used for entry point.
+// nothing else. everything else you should have in other files
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.WebHost.ConfigureKestrel(options =>
@@ -21,19 +24,20 @@ app.UseCors();
 string dataPath = "Data";
 Directory.CreateDirectory(dataPath);
 
+//util file instead of program :sob:
 List<T> Load<T>(string file)
 {
     var path = Path.Combine(dataPath, file);
     if (!File.Exists(path)) return new List<T>();
     return JsonSerializer.Deserialize<List<T>>(File.ReadAllText(path)) ?? new List<T>();
 }
-
+//util file instead of program :sob:
 void Save<T>(string file, List<T> data)
 {
     var path = Path.Combine(dataPath, file);
     File.WriteAllText(path, JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true }));
 }
-
+//util file instead of program :sob:
 string HashPassword(string password)
 {
     using var sha256 = SHA256.Create();
@@ -41,6 +45,7 @@ string HashPassword(string password)
     return Convert.ToBase64String(hashedBytes);
 }
 
+//user_handler/user_controller file instead of program :sob:
 void InitializeUsers()
 {
     var users = Load<User>("users.json");
@@ -59,6 +64,7 @@ void InitializeUsers()
 
 InitializeUsers();
 
+//util file instead of program :sob:
 bool IsAuthenticated(HttpContext context)
 {
     var token = context.Request.Headers["Authorization"].FirstOrDefault();
@@ -68,6 +74,7 @@ bool IsAuthenticated(HttpContext context)
     return sessions.Any(s => s.Token == token && s.ExpiresAt > DateTime.Now);
 }
 
+// Please set endpoints into separate files. its goofy ahh to have them all in one file
 // ============= AUTHENTICATION =============
 app.MapPost("/auth/login", async (HttpContext context) =>
 {
@@ -376,7 +383,7 @@ app.MapPost("/picklists", async (HttpContext context) =>
         if (inv == null)
             return Results.BadRequest($"Produkt {item.ProductId} findes ikke");
         if ((inv.Quantity - inv.Reserved) < item.Qty)
-            return Results.BadRequest($"Ikke nok på lager af {item.ProductId}. Tilgængeligt: {inv.Quantity - inv.Reserved}");
+            return Results.BadRequest($"Ikke nok pï¿½ lager af {item.ProductId}. Tilgï¿½ngeligt: {inv.Quantity - inv.Reserved}");
     }
 
     foreach (var item in pl.Items)
@@ -490,6 +497,7 @@ app.MapGet("/stats", (HttpContext context) =>
 
 app.Run();
 
+// please split classes into separate file :sob: on class per file
 // ============= MODELS =============
 public class User
 {
