@@ -60,21 +60,22 @@ class Program {
                 }
             }
             
-            void printConsoleOption(string name)
+            // goofy ahh to not make a local function for this shi. they did this for each line before
+            void PrintConsoleOption(string name)
             {
                 Console.ForegroundColor = ConsoleColor.Green;
                 Console.Write(name[0]);
                 Console.ForegroundColor = standardColor;
                 Console.WriteLine(name.Substring(1, name.Length - 1));
             }
-            //Print options
+            //print all the print options in a BETTER way
             Console.WriteLine("\n\nOptions:");
-            printConsoleOption("Quit");
-            if (index >= 0) printConsoleOption("Afslut plukseddel");
-            if (index > 0) printConsoleOption("Forrige plukseddel");
-            if (index < files.Count - 1) printConsoleOption("Næste plukseddel");
-            if (canPrint) printConsoleOption("Print plukseddel");
-            printConsoleOption("Genindlæs pluksedler");
+            PrintConsoleOption("Quit");
+            if (index >= 0) PrintConsoleOption("Afslut plukseddel");
+            if (index > 0) PrintConsoleOption("Forrige plukseddel");
+            if (index < files.Count - 1) PrintConsoleOption("Næste plukseddel");
+            if (canPrint) PrintConsoleOption("Print plukseddel");
+            PrintConsoleOption("Genindlæs pluksedler");
 
             readKey = Console.ReadKey().KeyChar;
             if (readKey >= 'a') readKey -= (char)('a' - 'A'); //HACK: To upper
@@ -103,6 +104,8 @@ class Program {
                     if (index == files.Count) index--;
                     break;
                 case 'P':
+                    // print the list to a file
+                    // read the plukliste
                     PluklisteReaderFactory factory = new PluklisteReaderFactory();
                     IPluklisteReader reader = factory.Get(files[index]);
                     Pluklist? plukliste = reader.Read(files[index]);
@@ -111,22 +114,29 @@ class Program {
                     {
                         foreach (var item in plukliste.Lines)
                         {
+                            //skip if we shall not print them
                             if (item.Type != ItemType.Print) continue;
 
+                            // get templates
                             string[] fileEntries = Directory.GetFiles("templates");
                             string[] fileEntriesNoPath = fileEntries
                                 .Select(f => Path.GetFileNameWithoutExtension(f))
                                 .ToArray();
+                            
+                            // check if print type is unkown
                             if(!fileEntriesNoPath.Contains(item.ProductID)) continue;
 
                             for (int i = 0; i < fileEntriesNoPath.Length; i++)
                             {
+                                // get correct tempalte
                                 if(fileEntriesNoPath[i] != item.ProductID) continue;
                                 
+                                //read all html from template and replace shit
                                 String html =  File.ReadAllText(fileEntries[i]);
                                 html = html.Replace("[Adresse]", plukliste.Adresse);
                                 html = html.Replace("[Name]", plukliste.Name);
 
+                                //interst all plukliste entries
                                 string plukList = "";
                                 foreach (Item listItem in plukliste.Lines)
                                 {
@@ -137,6 +147,7 @@ class Program {
                                 }
                                 html = html.Replace("[Plukliste]", plukList);
 
+                                // write the file and overwrite if it already exist
                                 string path = Path.Combine("print", $"{plukliste.Name}-{plukliste.Adresse}.html");
                                 if(File.Exists(path)) File.Delete(path);
                                 File.WriteAllText(path, html);
