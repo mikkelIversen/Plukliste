@@ -34,11 +34,59 @@
             line-height: 1.6;
         }
 
+        /* ========== LOGIN PAGE ========== */
+        .login-container {
+            display: none;
+            min-height: 100vh;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+        }
+
+            .login-container.active {
+                display: flex;
+            }
+
+        .login-box {
+            background: var(--surface);
+            padding: 3rem;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .login-logo {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            justify-content: center;
+        }
+
+            .login-logo::before {
+                content: "■";
+                font-size: 3rem;
+                color: var(--accent);
+            }
+
+        .login-subtitle {
+            text-align: center;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+        }
+
         .app-container {
-            display: grid;
+            display: none;
             grid-template-columns: 280px 1fr;
             min-height: 100vh;
         }
+
+            .app-container.active {
+                display: grid;
+            }
 
         /* ========== SIDEBAR ========== */
         .sidebar {
@@ -64,6 +112,19 @@
                 content: "■";
                 font-size: 2rem;
                 color: var(--accent);
+            }
+
+        .user-info {
+            background: var(--primary-light);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            font-size: 0.875rem;
+        }
+
+            .user-info strong {
+                display: block;
+                margin-bottom: 0.25rem;
             }
 
         .nav-menu {
@@ -94,6 +155,12 @@
                 color: white;
                 font-weight: 500;
             }
+
+        .logout-btn {
+            width: 100%;
+            margin-top: 1rem;
+            background: var(--danger);
+        }
 
         .connection-status {
             margin-top: 3rem;
@@ -589,10 +656,42 @@
     </style>
 </head>
 <body>
-    <div class="app-container">
+    <!-- LOGIN PAGE -->
+    <div class="login-container active" id="loginContainer">
+        <div class="login-box">
+            <div class="login-logo">Lager</div>
+            <p class="login-subtitle"></p>
+            <form id="loginForm">
+                <div class="form-group mb-1">
+                    <label>Brugernavn</label>
+                    <input type="text" id="loginUsername" required autofocus>
+                </div>
+                <div class="form-group mb-1">
+                    <label>Adgangskode</label>
+                    <input type="password" id="loginPassword" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    Log ind
+                </button>
+            </form>
+            <div id="loginError" class="alert alert-danger" style="display: none; margin-top: 1rem;">
+                Forkert brugernavn eller adgangskode
+            </div>
+            <p class="text-center text-muted" style="margin-top: 1rem; font-size: 0.875rem;">
+                Standard login: admin / admin123
+            </p>
+        </div>
+    </div>
+
+    <!-- MAIN APP -->
+    <div class="app-container" id="appContainer">
         <!-- SIDEBAR -->
         <aside class="sidebar">
             <div class="logo">Lager</div>
+            <div class="user-info" id="userInfo">
+                <strong id="currentUsername"></strong>
+                <span id="currentRole"></span>
+            </div>
             <ul class="nav-menu">
                 <li class="nav-item">
                     <a class="nav-link active" data-page="dashboard">Dashboard</a>
@@ -606,7 +705,13 @@
                 <li class="nav-item">
                     <a class="nav-link" data-page="picklists">Pluklister</a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-page="users">Brugere</a>
+                </li>
             </ul>
+            <button class="btn btn-danger logout-btn" onclick="logout()">
+                Log ud
+            </button>
             <div class="connection-status">
                 <span class="status-indicator connected"></span>
                 <span id="statusText">Forbundet</span>
@@ -840,6 +945,61 @@
                     </div>
                 </div>
             </div>
+
+            <!-- USERS PAGE -->
+            <div class="page" id="users">
+                <div class="page-header">
+                    <h1 class="page-title">Brugere</h1>
+                    <p class="page-subtitle">Administrer brugerkonti</p>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Opret ny bruger</h2>
+                    </div>
+                    <form id="userForm">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Brugernavn *</label>
+                                <input type="text" id="newUsername" required placeholder="Brugernavn">
+                            </div>
+                            <div class="form-group">
+                                <label>Adgangskode *</label>
+                                <input type="password" id="newPassword" required placeholder="Adgangskode">
+                            </div>
+                            <div class="form-group">
+                                <label>Rolle</label>
+                                <select id="newRole">
+                                    <option value="user">Bruger</option>
+                                    <option value="admin">Administrator</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            Opret bruger
+                        </button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Alle brugere</h2>
+                    </div>
+                    <div class="table-container">
+                        <table id="usersTable">
+                            <thead>
+                                <tr>
+                                    <th>Brugernavn</th>
+                                    <th>Rolle</th>
+                                    <th>Oprettet</th>
+                                    <th>Handlinger</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
 
@@ -882,10 +1042,126 @@
 
     <script>
         const API = "";
+        let authToken = localStorage.getItem('authToken') || '';
+        let currentUser = null;
         let allProducts = [];
         let allInventory = [];
         let allPicklists = [];
         let allCategories = [];
+        let allUsers = [];
+
+        // ============= AUTHENTICATION =============
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                const res = await fetch(`${API}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (!res.ok) {
+                    document.getElementById('loginError').style.display = 'block';
+                    return;
+                }
+
+                const data = await res.json();
+                authToken = data.token;
+                currentUser = { username: data.username, role: data.role };
+                localStorage.setItem('authToken', authToken);
+
+                document.getElementById('loginContainer').classList.remove('active');
+                document.getElementById('appContainer').classList.add('active');
+                document.getElementById('loginError').style.display = 'none';
+
+                updateUserInfo();
+                loadAllData();
+            } catch (error) {
+                console.error('Login fejl:', error);
+                document.getElementById('loginError').style.display = 'block';
+            }
+        });
+
+        async function logout() {
+            try {
+                await fetch(`${API}/auth/logout`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: authToken })
+                });
+            } catch (error) {
+                console.error('Logout fejl:', error);
+            }
+
+            authToken = '';
+            currentUser = null;
+            localStorage.removeItem('authToken');
+
+            document.getElementById('appContainer').classList.remove('active');
+            document.getElementById('loginContainer').classList.add('active');
+            document.getElementById('loginUsername').value = '';
+            document.getElementById('loginPassword').value = '';
+        }
+
+        async function validateToken() {
+            if (!authToken) {
+                return false;
+            }
+
+            try {
+                const res = await fetch(`${API}/auth/validate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: authToken })
+                });
+
+                if (!res.ok) {
+                    return false;
+                }
+
+                const data = await res.json();
+                currentUser = { username: data.username, role: data.role };
+                return true;
+            } catch (error) {
+                return false;
+            }
+        }
+
+        function updateUserInfo() {
+            if (currentUser) {
+                document.getElementById('currentUsername').textContent = currentUser.username;
+                document.getElementById('currentRole').textContent = currentUser.role === 'admin' ? 'Administrator' : 'Bruger';
+            }
+        }
+
+        async function authFetch(url, options = {}) {
+            options.headers = {
+                ...options.headers,
+                'Authorization': authToken
+            };
+
+            const res = await fetch(url, options);
+
+            if (res.status === 401) {
+                logout();
+                throw new Error('Unauthorized');
+            }
+
+            return res;
+        }
+
+        // Check if already logged in
+        (async () => {
+            if (await validateToken()) {
+                document.getElementById('loginContainer').classList.remove('active');
+                document.getElementById('appContainer').classList.add('active');
+                updateUserInfo();
+                loadAllData();
+            }
+        })();
 
         // ============= NAVIGATION =============
         document.querySelectorAll('.nav-link').forEach(link => {
@@ -907,11 +1183,11 @@
         async function loadAllData() {
             try {
                 const [productsRes, inventoryRes, picklistsRes, categoriesRes, statsRes] = await Promise.all([
-                    fetch(`${API}/products`),
-                    fetch(`${API}/inventory`),
-                    fetch(`${API}/picklists`),
-                    fetch(`${API}/categories`),
-                    fetch(`${API}/stats`)
+                    authFetch(`${API}/products`),
+                    authFetch(`${API}/inventory`),
+                    authFetch(`${API}/picklists`),
+                    authFetch(`${API}/categories`),
+                    authFetch(`${API}/stats`)
                 ]);
 
                 allProducts = await productsRes.json();
@@ -945,6 +1221,9 @@
                     break;
                 case 'picklists':
                     renderPicklistsTable();
+                    break;
+                case 'users':
+                    loadUsers();
                     break;
             }
         }
@@ -995,7 +1274,7 @@
 
         async function loadDashboard() {
             try {
-                const res = await fetch(`${API}/inventory/low-stock`);
+                const res = await authFetch(`${API}/inventory/low-stock`);
                 const lowStock = await res.json();
 
                 const tbody = document.querySelector('#lowStockTable tbody');
@@ -1034,7 +1313,7 @@
             };
 
             try {
-                const res = await fetch(`${API}/products`, {
+                const res = await authFetch(`${API}/products`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
@@ -1087,7 +1366,7 @@
             if (!confirm(`Er du sikker på at du vil slette produkt ${id}?`)) return;
 
             try {
-                const res = await fetch(`${API}/products/${id}`, { method: 'DELETE' });
+                const res = await authFetch(`${API}/products/${id}`, { method: 'DELETE' });
                 if (!res.ok) {
                     const error = await res.text();
                     alert('Fejl: ' + error);
@@ -1133,7 +1412,7 @@
                             </td>
                             <td>
                                 <button class="btn btn-small btn-secondary" onclick="openAdjustInventory('${item.productId}')">
-                                     Juster
+                                    Juster
                                 </button>
                             </td>
                         </tr>
@@ -1157,7 +1436,7 @@
             }
 
             try {
-                const res = await fetch(`${API}/inventory/${productId}/adjust`, {
+                const res = await authFetch(`${API}/inventory/${productId}/adjust`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ quantity })
@@ -1205,13 +1484,12 @@
                         <input type="number" class="item-quantity" min="1" required>
                     </div>
                     <button type="button" class="remove-item-btn" onclick="removePicklistItem(${itemId})">
-                        
+                        ✕
                     </button>
                 `;
 
             container.appendChild(itemDiv);
         }
-
 
         function removePicklistItem(itemId) {
             document.getElementById(`item-${itemId}`).remove();
@@ -1239,7 +1517,7 @@
             };
 
             try {
-                const res = await fetch(`${API}/picklists`, {
+                const res = await authFetch(`${API}/picklists`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
@@ -1340,12 +1618,12 @@
                             ${picklist.items.map(item => {
                 const product = allProducts.find(p => p.id === item.productId) || {};
                 return `
-                                    <tr>
-                                        <td>${item.productId}</td>
-                                        <td>${product.name || '-'}</td>
-                                        <td><strong>${item.qty}</strong></td>
-                                    </tr>
-                                `;
+                                <tr>
+                                    <td>${item.productId}</td>
+                                    <td>${product.name || '-'}</td>
+                                    <td><strong>${item.qty}</strong></td>
+                                </tr>
+                            `;
             }).join('')}
                         </tbody>
                     </table>
@@ -1358,7 +1636,7 @@
             if (!confirm('Er du sikker på at pluklisten er færdig?')) return;
 
             try {
-                const res = await fetch(`${API}/picklists/${id}/complete`, { method: 'POST' });
+                const res = await authFetch(`${API}/picklists/${id}/complete`, { method: 'POST' });
                 if (!res.ok) {
                     alert('Fejl ved afslutning');
                     return;
@@ -1374,7 +1652,7 @@
             if (!confirm('Er du sikker på at du vil annullere pluklisten?')) return;
 
             try {
-                const res = await fetch(`${API}/picklists/${id}/cancel`, { method: 'POST' });
+                const res = await authFetch(`${API}/picklists/${id}/cancel`, { method: 'POST' });
                 if (!res.ok) {
                     alert('Fejl ved annullering');
                     return;
@@ -1410,13 +1688,12 @@
                     const text = await file.text();
                     const picklist = JSON.parse(text);
 
-                    // Valider struktur
                     if (!picklist.id || !picklist.items || !Array.isArray(picklist.items)) {
                         alert('Ugyldig JSON format');
                         return;
                     }
 
-                    const res = await fetch(`${API}/picklists`, {
+                    const res = await authFetch(`${API}/picklists`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(picklist)
@@ -1441,6 +1718,89 @@
 
         document.getElementById('picklistStatusFilter').addEventListener('change', renderPicklistsTable);
 
+        // ============= USERS =============
+        async function loadUsers() {
+            try {
+                const res = await authFetch(`${API}/users`);
+                allUsers = await res.json();
+                renderUsersTable();
+            } catch (error) {
+                console.error('Fejl ved indlæsning af brugere:', error);
+            }
+        }
+
+        function renderUsersTable() {
+            const tbody = document.querySelector('#usersTable tbody');
+            tbody.innerHTML = allUsers.map(u => {
+                const createdDate = new Date(u.createdAt).toLocaleDateString('da-DK');
+                const roleBadge = u.role === 'admin'
+                    ? '<span class="badge badge-danger">Admin</span>'
+                    : '<span class="badge badge-primary">Bruger</span>';
+
+                return `
+                        <tr>
+                            <td><strong>${u.username}</strong></td>
+                            <td>${roleBadge}</td>
+                            <td>${createdDate}</td>
+                            <td>
+                                ${u.username !== 'admin' ? `
+                                    <button class="btn btn-small btn-danger" onclick="deleteUser('${u.username}')">
+                                        Slet
+                                    </button>
+                                ` : '<span class="text-muted">Kan ikke slettes</span>'}
+                            </td>
+                        </tr>
+                    `;
+            }).join('');
+        }
+
+        document.getElementById('userForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const data = {
+                username: document.getElementById('newUsername').value,
+                password: document.getElementById('newPassword').value,
+                role: document.getElementById('newRole').value
+            };
+
+            try {
+                const res = await authFetch(`${API}/users`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (!res.ok) {
+                    const error = await res.text();
+                    alert('Fejl: ' + error);
+                    return;
+                }
+
+                e.target.reset();
+                await loadUsers();
+                alert('Bruger oprettet!');
+            } catch (error) {
+                alert('Fejl ved oprettelse: ' + error.message);
+            }
+        });
+
+        async function deleteUser(username) {
+            if (!confirm(`Er du sikker på at du vil slette brugeren ${username}?`)) return;
+
+            try {
+                const res = await authFetch(`${API}/users/${username}`, { method: 'DELETE' });
+                if (!res.ok) {
+                    const error = await res.text();
+                    alert('Fejl: ' + error);
+                    return;
+                }
+                await loadUsers();
+                alert('Bruger slettet!');
+            } catch (error) {
+                alert('Fejl: ' + error.message);
+            }
+        }
+
         // ============= UTILITIES =============
         function updateCategoryLists() {
             const categoryList = document.getElementById('categoryList');
@@ -1459,7 +1819,6 @@
             document.getElementById(modalId).classList.remove('active');
         }
 
-        // Click outside modal to close
         document.querySelectorAll('.modal').forEach(modal => {
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) {
@@ -1468,12 +1827,10 @@
             });
         });
 
-        // ============= INIT =============
-        loadAllData();
-        setInterval(loadAllData, 10000); // Refresh every 10 seconds
-
         // Add first picklist item by default
-        addPicklistItem();
+        if (authToken) {
+            addPicklistItem();
+        }
     </script>
 </body>
 </html>

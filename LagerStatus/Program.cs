@@ -1,21 +1,21 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
+using System.Security.Cryptography;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure Kestrel to use port 5000 with HTTP only
 builder.WebHost.ConfigureKestrel(options =>
 {
     options.ListenLocalhost(5000);
 });
 
 builder.Services.AddCors(o => o.AddDefaultPolicy(p => p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
+
 var app = builder.Build();
 
-// Serve static files (index.html)
 app.UseDefaultFiles();
 app.UseStaticFiles();
-
 app.UseCors();
 
 string dataPath = "Data";
@@ -34,16 +34,190 @@ void Save<T>(string file, List<T> data)
     File.WriteAllText(path, JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true }));
 }
 
-// ============= PRODUKTER =============
-app.MapGet("/products", () => Load<Product>("products.json"));
+string HashPassword(string password)
+{
+    using var sha256 = SHA256.Create();
+    var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
+    return Convert.ToBase64String(hashedBytes);
+}
 
-app.MapGet("/products/{id}", (string id) => {
+void InitializeUsers()
+{
+    var users = Load<User>("users.json");
+    if (users.Count == 0)
+    {
+        users.Add(new User
+        {
+            Username = "admin",
+            PasswordHash = HashPassword("admin123"),
+            Role = "admin",
+            CreatedAt = DateTime.Now
+        });
+        Save("users.json", users);
+    }
+}
+
+InitializeUsers();
+
+bool IsAuthenticated(HttpContext context)
+{
+    var token = context.Request.Headers["Authorization"].FirstOrDefault();
+    if (string.IsNullOrEmpty(token)) return false;
+
+    var sessions = Load<Session>("sessions.json");
+    return sessions.Any(s => s.Token == token && s.ExpiresAt > DateTime.Now);
+}
+
+// ============= AUTHENTICATION =============
+app.MapPost("/auth/login", async (HttpContext context) =>
+{
+    var req = await context.Request.ReadFromJsonAsync<LoginRequest>();
+    if (req == null) return Results.BadRequest("Invalid request");
+
+    var users = Load<User>("users.json");
+    var passwordHash = HashPassword(req.Password);
+    var user = users.FirstOrDefault(u => u.Username == req.Username && u.PasswordHash == passwordHash);
+
+    if (user == null)
+        return Results.Unauthorized();
+
+    var sessionToken = Guid.NewGuid().ToString();
+    var sessions = Load<Session>("sessions.json");
+
+    sessions.Add(new Session
+    {
+        Token = sessionToken,
+        Username = user.Username,
+        CreatedAt = DateTime.Now,
+        ExpiresAt = DateTime.Now.AddHours(24)
+    });
+
+    Save("sessions.json", sessions);
+
+    return Results.Ok(new
+    {
+        Token = sessionToken,
+        Username = user.Username,
+        Role = user.Role
+    });
+});
+
+app.MapPost("/auth/logout", async (HttpContext context) =>
+{
+    var req = await context.Request.ReadFromJsonAsync<LogoutRequest>();
+    if (req == null) return Results.BadRequest("Invalid request");
+
+    var sessions = Load<Session>("sessions.json");
+    sessions.RemoveAll(s => s.Token == req.Token);
+    Save("sessions.json", sessions);
+    return Results.Ok();
+});
+
+app.MapPost("/auth/validate", async (HttpContext context) =>
+{
+    var req = await context.Request.ReadFromJsonAsync<ValidateRequest>();
+    if (req == null) return Results.BadRequest("Invalid request");
+
+    var sessions = Load<Session>("sessions.json");
+    var session = sessions.FirstOrDefault(s => s.Token == req.Token && s.ExpiresAt > DateTime.Now);
+
+    if (session == null)
+        return Results.Unauthorized();
+
+    var users = Load<User>("users.json");
+    var user = users.FirstOrDefault(u => u.Username == session.Username);
+
+    if (user == null)
+        return Results.Unauthorized();
+
+    return Results.Ok(new
+    {
+        Username = user.Username,
+        Role = user.Role
+    });
+});
+
+// ============= USER MANAGEMENT =============
+app.MapGet("/users", (HttpContext context) =>
+{
+    if (!IsAuthenticated(context)) return Results.Unauthorized();
+
+    var users = Load<User>("users.json");
+    return Results.Ok(users.Select(u => new
+    {
+        u.Username,
+        u.Role,
+        u.CreatedAt
+    }));
+});
+
+app.MapPost("/users", async (HttpContext context) =>
+{
+    if (!IsAuthenticated(context)) return Results.Unauthorized();
+
+    var req = await context.Request.ReadFromJsonAsync<CreateUserRequest>();
+    if (req == null) return Results.BadRequest("Invalid request");
+
+    var users = Load<User>("users.json");
+
+    if (users.Any(u => u.Username == req.Username))
+        return Results.BadRequest("Brugernavn findes allerede");
+
+    var newUser = new User
+    {
+        Username = req.Username,
+        PasswordHash = HashPassword(req.Password),
+        Role = req.Role ?? "user",
+        CreatedAt = DateTime.Now
+    };
+
+    users.Add(newUser);
+    Save("users.json", users);
+
+    return Results.Ok(new
+    {
+        newUser.Username,
+        newUser.Role,
+        newUser.CreatedAt
+    });
+});
+
+app.MapDelete("/users/{username}", (HttpContext context, string username) =>
+{
+    if (!IsAuthenticated(context)) return Results.Unauthorized();
+
+    if (username == "admin")
+        return Results.BadRequest("Kan ikke slette admin brugeren");
+
+    var users = Load<User>("users.json");
+    users.RemoveAll(u => u.Username == username);
+    Save("users.json", users);
+
+    return Results.Ok();
+});
+
+// ============= PRODUKTER =============
+app.MapGet("/products", (HttpContext context) =>
+{
+    if (!IsAuthenticated(context)) return Results.Unauthorized();
+    return Results.Ok(Load<Product>("products.json"));
+});
+
+app.MapGet("/products/{id}", (HttpContext context, string id) =>
+{
+    if (!IsAuthenticated(context)) return Results.Unauthorized();
     var products = Load<Product>("products.json");
     var product = products.FirstOrDefault(p => p.Id == id);
     return product != null ? Results.Ok(product) : Results.NotFound();
 });
 
-app.MapPost("/products", ([FromBody] ProductRequest req) => {
+app.MapPost("/products", async (HttpContext context) =>
+{
+    if (!IsAuthenticated(context)) return Results.Unauthorized();
+
+    var req = await context.Request.ReadFromJsonAsync<ProductRequest>();
+    if (req == null) return Results.BadRequest("Invalid request");
+
     var products = Load<Product>("products.json");
     var inventory = Load<InventoryItem>("inventory.json");
 
@@ -74,7 +248,13 @@ app.MapPost("/products", ([FromBody] ProductRequest req) => {
     return Results.Ok(newProd);
 });
 
-app.MapPut("/products/{id}", (string id, [FromBody] Product req) => {
+app.MapPut("/products/{id}", async (HttpContext context, string id) =>
+{
+    if (!IsAuthenticated(context)) return Results.Unauthorized();
+
+    var req = await context.Request.ReadFromJsonAsync<Product>();
+    if (req == null) return Results.BadRequest("Invalid request");
+
     var products = Load<Product>("products.json");
     var product = products.FirstOrDefault(p => p.Id == id);
     if (product == null) return Results.NotFound();
@@ -90,12 +270,14 @@ app.MapPut("/products/{id}", (string id, [FromBody] Product req) => {
     return Results.Ok(product);
 });
 
-app.MapDelete("/products/{id}", (string id) => {
+app.MapDelete("/products/{id}", (HttpContext context, string id) =>
+{
+    if (!IsAuthenticated(context)) return Results.Unauthorized();
+
     var products = Load<Product>("products.json");
     var inventory = Load<InventoryItem>("inventory.json");
     var picklists = Load<Picklist>("picklists.json");
 
-    // Tjek om produkt er i aktive pluklister
     if (picklists.Any(pl => pl.Status == "active" && pl.Items.Any(i => i.ProductId == id)))
         return Results.BadRequest("Kan ikke slette - produkt er i aktiv plukliste");
 
@@ -108,16 +290,25 @@ app.MapDelete("/products/{id}", (string id) => {
 });
 
 // ============= KATEGORIER =============
-app.MapGet("/categories", () => {
+app.MapGet("/categories", (HttpContext context) =>
+{
+    if (!IsAuthenticated(context)) return Results.Unauthorized();
     var products = Load<Product>("products.json");
     var categories = products.Select(p => p.Category).Distinct().Where(c => !string.IsNullOrEmpty(c)).ToList();
     return Results.Ok(categories);
 });
 
 // ============= INVENTORY =============
-app.MapGet("/inventory", () => Load<InventoryItem>("inventory.json"));
+app.MapGet("/inventory", (HttpContext context) =>
+{
+    if (!IsAuthenticated(context)) return Results.Unauthorized();
+    return Results.Ok(Load<InventoryItem>("inventory.json"));
+});
 
-app.MapGet("/inventory/low-stock", () => {
+app.MapGet("/inventory/low-stock", (HttpContext context) =>
+{
+    if (!IsAuthenticated(context)) return Results.Unauthorized();
+
     var inventory = Load<InventoryItem>("inventory.json");
     var products = Load<Product>("products.json");
 
@@ -135,7 +326,13 @@ app.MapGet("/inventory/low-stock", () => {
     return Results.Ok(lowStock);
 });
 
-app.MapPost("/inventory/{productId}/adjust", (string productId, [FromBody] InventoryAdjustment adj) => {
+app.MapPost("/inventory/{productId}/adjust", async (HttpContext context, string productId) =>
+{
+    if (!IsAuthenticated(context)) return Results.Unauthorized();
+
+    var adj = await context.Request.ReadFromJsonAsync<InventoryAdjustment>();
+    if (adj == null) return Results.BadRequest("Invalid request");
+
     var inventory = Load<InventoryItem>("inventory.json");
     var item = inventory.FirstOrDefault(i => i.ProductId == productId);
 
@@ -149,19 +346,30 @@ app.MapPost("/inventory/{productId}/adjust", (string productId, [FromBody] Inven
 });
 
 // ============= PLUKLISTER =============
-app.MapGet("/picklists", () => Load<Picklist>("picklists.json"));
+app.MapGet("/picklists", (HttpContext context) =>
+{
+    if (!IsAuthenticated(context)) return Results.Unauthorized();
+    return Results.Ok(Load<Picklist>("picklists.json"));
+});
 
-app.MapGet("/picklists/{id}", (string id) => {
+app.MapGet("/picklists/{id}", (HttpContext context, string id) =>
+{
+    if (!IsAuthenticated(context)) return Results.Unauthorized();
     var picklists = Load<Picklist>("picklists.json");
     var picklist = picklists.FirstOrDefault(p => p.Id == id);
     return picklist != null ? Results.Ok(picklist) : Results.NotFound();
 });
 
-app.MapPost("/picklists", ([FromBody] Picklist pl) => {
+app.MapPost("/picklists", async (HttpContext context) =>
+{
+    if (!IsAuthenticated(context)) return Results.Unauthorized();
+
+    var pl = await context.Request.ReadFromJsonAsync<Picklist>();
+    if (pl == null) return Results.BadRequest("Invalid request");
+
     var picklists = Load<Picklist>("picklists.json");
     var inventory = Load<InventoryItem>("inventory.json");
 
-    // Valider alle items
     foreach (var item in pl.Items)
     {
         var inv = inventory.FirstOrDefault(i => i.ProductId == item.ProductId);
@@ -171,7 +379,6 @@ app.MapPost("/picklists", ([FromBody] Picklist pl) => {
             return Results.BadRequest($"Ikke nok på lager af {item.ProductId}. Tilgængeligt: {inv.Quantity - inv.Reserved}");
     }
 
-    // Reserver alle items
     foreach (var item in pl.Items)
     {
         var inv = inventory.First(i => i.ProductId == item.ProductId);
@@ -185,7 +392,10 @@ app.MapPost("/picklists", ([FromBody] Picklist pl) => {
     return Results.Ok(pl);
 });
 
-app.MapPost("/picklists/{id}/complete", (string id) => {
+app.MapPost("/picklists/{id}/complete", (HttpContext context, string id) =>
+{
+    if (!IsAuthenticated(context)) return Results.Unauthorized();
+
     var picklists = Load<Picklist>("picklists.json");
     var inventory = Load<InventoryItem>("inventory.json");
     var pl = picklists.FirstOrDefault(p => p.Id == id);
@@ -207,7 +417,10 @@ app.MapPost("/picklists/{id}/complete", (string id) => {
     return Results.Ok(pl);
 });
 
-app.MapPost("/picklists/{id}/cancel", (string id) => {
+app.MapPost("/picklists/{id}/cancel", (HttpContext context, string id) =>
+{
+    if (!IsAuthenticated(context)) return Results.Unauthorized();
+
     var picklists = Load<Picklist>("picklists.json");
     var inventory = Load<InventoryItem>("inventory.json");
     var pl = picklists.FirstOrDefault(p => p.Id == id);
@@ -215,7 +428,6 @@ app.MapPost("/picklists/{id}/cancel", (string id) => {
     if (pl == null) return Results.NotFound();
     if (pl.Status == "completed") return Results.BadRequest("Kan ikke annullere afsluttet plukliste");
 
-    // Frigør reserverede items
     foreach (var item in pl.Items)
     {
         var inv = inventory.First(i => i.ProductId == item.ProductId);
@@ -228,14 +440,16 @@ app.MapPost("/picklists/{id}/cancel", (string id) => {
     return Results.Ok(pl);
 });
 
-app.MapDelete("/picklists/{id}", (string id) => {
+app.MapDelete("/picklists/{id}", (HttpContext context, string id) =>
+{
+    if (!IsAuthenticated(context)) return Results.Unauthorized();
+
     var picklists = Load<Picklist>("picklists.json");
     var inventory = Load<InventoryItem>("inventory.json");
     var pl = picklists.FirstOrDefault(p => p.Id == id);
 
     if (pl == null) return Results.NotFound();
 
-    // Hvis aktiv, frigør reservationer først
     if (pl.Status == "active")
     {
         foreach (var item in pl.Items)
@@ -252,7 +466,10 @@ app.MapDelete("/picklists/{id}", (string id) => {
 });
 
 // ============= STATISTIK =============
-app.MapGet("/stats", () => {
+app.MapGet("/stats", (HttpContext context) =>
+{
+    if (!IsAuthenticated(context)) return Results.Unauthorized();
+
     var products = Load<Product>("products.json");
     var inventory = Load<InventoryItem>("inventory.json");
     var picklists = Load<Picklist>("picklists.json");
@@ -274,6 +491,45 @@ app.MapGet("/stats", () => {
 app.Run();
 
 // ============= MODELS =============
+public class User
+{
+    public string Username { get; set; } = "";
+    public string PasswordHash { get; set; } = "";
+    public string Role { get; set; } = "user";
+    public DateTime CreatedAt { get; set; }
+}
+
+public class Session
+{
+    public string Token { get; set; } = "";
+    public string Username { get; set; } = "";
+    public DateTime CreatedAt { get; set; }
+    public DateTime ExpiresAt { get; set; }
+}
+
+public class LoginRequest
+{
+    public string Username { get; set; } = "";
+    public string Password { get; set; } = "";
+}
+
+public class LogoutRequest
+{
+    public string Token { get; set; } = "";
+}
+
+public class ValidateRequest
+{
+    public string Token { get; set; } = "";
+}
+
+public class CreateUserRequest
+{
+    public string Username { get; set; } = "";
+    public string Password { get; set; } = "";
+    public string? Role { get; set; }
+}
+
 public class Product
 {
     public string Id { get; set; } = "";
