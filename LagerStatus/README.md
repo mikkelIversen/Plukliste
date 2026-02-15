@@ -1,31 +1,18 @@
-# Warehouse Management API
-
-A clean, well-structured ASP.NET Core backend for warehouse management with integrated notes functionality.
-
-##  Features
-
-- **User Management** - Admin and user roles with secure authentication
-- **Product Management** - CRUD operations for warehouse products
-- **Inventory Tracking** - Real-time stock levels with low-stock alerts
-- **Picklist System** - Create, complete, and cancel picking lists
-- **Integrated Notes** - Attach notes to products, picklists, or create general notes
-- **Statistics Dashboard** - Comprehensive warehouse metrics
-
 ##  Project Structure
 
 ```
 WarehouseAPI/
-├── Program.cs                  # Application entry point
-├── Models/                     # Data models
+├── Program.cs                  
+├── Models/                   
 │   ├── User.cs
 │   ├── Product.cs
 │   ├── Picklist.cs
-│   └── Note.cs                # New: Notes system
-├── DTOs/                      # Data transfer objects
+│   └── Note.cs               
+├── DTOs/                      
 │   ├── AuthDtos.cs
 │   ├── ProductDtos.cs
-│   └── NoteDtos.cs           # New: Notes DTOs
-├── Services/                  # Business logic
+│   └── NoteDtos.cs           
+├── Services/                  
 │   ├── IDataService.cs
 │   ├── JsonDataService.cs
 │   ├── IAuthService.cs
@@ -38,11 +25,11 @@ WarehouseAPI/
 │   ├── InventoryService.cs
 │   ├── IPicklistService.cs
 │   ├── PicklistService.cs
-│   ├── INotesService.cs      # New: Notes service
-│   ├── NotesService.cs       # New: Notes implementation
+│   ├── INotesService.cs      
+│   ├── NotesService.cs       
 │   ├── IStatsService.cs
 │   └── StatsService.cs
-├── Endpoints/                 # API endpoints
+├── Endpoints/                 
 │   ├── AuthEndpoints.cs
 │   ├── UserEndpoints.cs
 │   ├── ProductEndpoints.cs
@@ -183,34 +170,4 @@ Data is stored in JSON files in the `Data/` directory:
 - `inventory.json` - Inventory levels
 - `picklists.json` - Picking lists
 - `notes.json` - Notes (NEW!)
-
-##  Architecture Benefits
-
-### Separation of Concerns
-- **Models**: Pure data structures
-- **Services**: Business logic and data operations
-- **Endpoints**: HTTP request handling
-- **DTOs**: Request/response contracts
-
-### Dependency Injection
-All services are registered and injected, making the code:
-- Testable
-- Maintainable
-- Easy to mock for unit tests
-
-### Interface-Based Design
-Every service has an interface, enabling:
-- Easy swapping of implementations
-- Better unit testing
-- Loose coupling
-
-##  Improvements Over Original
-
-1.  **Separated into logical files** - No more 600-line Program.cs
-2. **Service layer** - Business logic separated from endpoints
-3.  **Dependency injection** - Proper IoC container usage
-4. **Interface-based** - All services have interfaces
-5.  **Better error handling** - Proper exceptions and responses
-6.  **Integrated notes system** - Full-featured notes functionality
-7.  **Clean architecture** - Easy to extend and maintain
 

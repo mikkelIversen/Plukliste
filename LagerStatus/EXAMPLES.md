@@ -4,7 +4,7 @@
 
 ### 1. Create a Product-Related Note
 
-When you notice a product issue or need to track something:
+W
 
 ```bash
 POST http://localhost:5000/notes
@@ -24,7 +24,7 @@ Content-Type: application/json
 
 ### 2. Create a Picklist Note
 
-Add notes to track picking issues or special instructions:
+
 
 ```bash
 POST http://localhost:5000/notes
@@ -44,7 +44,7 @@ Content-Type: application/json
 
 ### 3. Create a General Warehouse Note
 
-For general information not tied to specific entities:
+
 
 ```bash
 POST http://localhost:5000/notes
@@ -71,7 +71,7 @@ Authorization: your-token
 
 ### 5. Get All Pinned Notes
 
-View all important pinned notes:
+
 
 ```bash
 GET http://localhost:5000/notes/pinned
@@ -80,7 +80,6 @@ Authorization: your-token
 
 ### 6. Get Unresolved Notes
 
-See all notes that still need attention:
 
 ```bash
 GET http://localhost:5000/notes/unresolved
@@ -89,7 +88,6 @@ Authorization: your-token
 
 ### 7. Filter Notes by Priority
 
-Get only high-priority notes:
 
 ```bash
 GET http://localhost:5000/notes?priority=high
@@ -105,7 +103,6 @@ Authorization: your-token
 
 ### 8. Update a Note
 
-Mark a note as resolved:
 
 ```bash
 PUT http://localhost:5000/notes/note-id-here
@@ -117,7 +114,6 @@ Content-Type: application/json
 }
 ```
 
-Update note content and priority:
 
 ```bash
 PUT http://localhost:5000/notes/note-id-here
@@ -154,13 +150,13 @@ Authorization: your-token
 
 ### Scenario: Low Stock Alert and Reorder Process
 
-**Step 1: Check low stock items**
+
 ```bash
 GET http://localhost:5000/inventory/low-stock
 Authorization: your-token
 ```
 
-**Step 2: Create a note for reordering**
+
 ```bash
 POST http://localhost:5000/notes
 Authorization: your-token
@@ -177,7 +173,7 @@ Content-Type: application/json
 }
 ```
 
-**Step 3: When order is placed, update the note**
+
 ```bash
 PUT http://localhost:5000/notes/note-id-here
 Authorization: your-token
@@ -189,7 +185,7 @@ Content-Type: application/json
 }
 ```
 
-**Step 4: When stock arrives, adjust inventory**
+
 ```bash
 POST http://localhost:5000/inventory/WIDGET-500/adjust
 Authorization: your-token
